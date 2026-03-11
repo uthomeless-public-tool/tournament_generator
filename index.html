@@ -1,3 +1,4 @@
+<!-- こっち見んな -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -39,7 +40,7 @@
         .slot-row.done { border-color: var(--success); background: #1a1a1a; }
         
         .slot-label { 
-            width: 110px; background: #333; color: #888; height: 100%; 
+            width: 105px; background: #333; color: #888; height: 100%; 
             display: flex; align-items: center; justify-content: center; 
             font-size: 0.7rem; font-weight: bold; border-right: 1px solid #444; 
             text-align: center; padding: 0 5px; box-sizing: border-box;
@@ -240,7 +241,7 @@ function render(isFinished = false) {
             <button class="lock-btn ${states[idx].locked ? 'active' : ''}" onclick="toggleLock(${idx})">
                 ${states[idx].locked ? '🔒' : '🔓'}
             </button>
-            <button class="del-btn" onclick="deleteRowFromSlot(${idx})">✖</button>
+            <button class="del-btn" onclick="deleteRowFromSlot(${idx})">❌</button>
         `;
         app.appendChild(row);
     });
