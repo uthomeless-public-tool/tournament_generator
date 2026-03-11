@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ロビー大会ルール抽選</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #e67e22;
+            --success: #2ecc71;
+            --bg: #f4f7f6;
+            --card: #ffffff;
+            --tokkan: #9b59b6;
+        }
+        body { font-family: sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; color: #333; margin: 0; }
+        
+        /* タブ切り替え */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; width: 100%; max-width: 600px; }
+        .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; background: #ddd; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .tab-btn.active.tokkan-theme { background: var(--tokkan); }
+
+        .main-card { width: 100%; max-width: 600px; background: var(--card); padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); box-sizing: border-box; }
+        h2 { text-align: center; margin-top: 0; color: var(--primary); font-size: 1.4rem; }
+
+        .how-to-use { background: #f9f9f9; padding: 12px; border-radius: 10px; margin-bottom: 15px; font-size: 0.8rem; color: #666; line-height: 1.5; border-left: 4px solid var(--primary); }
+
+        /* スロットデザイン */
+        .slot-container { display: flex; flex-direction: column; gap: 12px; margin: 15px 0; }
+        .slot-row { 
+            display: grid;
+            grid-template-columns: 100px 1fr 45px 45px;
+            align-items: center; background: #222; height: 55px; 
+            border-radius: 10px; overflow: hidden; position: relative; border: 2px solid #444;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .slot-row.active { border-color: var(--accent); box-shadow: 0 0 12px rgba(230, 126, 34, 0.5); }
+        .slot-row.done { border-color: var(--success); background: #1a1a1a; }
+        
+        .slot-label { 
+            width: 110px; background: #333; color: #888; height: 100%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 0.7rem; font-weight: bold; border-right: 1px solid #444; 
+            text-align: center; padding: 0 5px; box-sizing: border-box;
+        }
+        .slot-row.done .slot-label { color: var(--success); }
+
+        .slot-viewport { height: 100%; position: relative; overflow: hidden; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .slot-item { 
+            color: #fff; font-weight: bold; 
+            font-size: 1.1rem; text-align: center; transition: color 0.2s;
+        }
+        .tokkan-container .slot-row {
+            /* 通常は 100px 1fr 45px 45px だが、ボタンがない分を 1fr に吸収させる */
+            grid-template-columns: 100px 1fr;
+        }
+
+        .lock-btn { 
+            width: 45px; height: 100%; border: none; background: #333; 
+            color: #666; cursor: pointer; font-size: 1.1rem; border-left: 1px solid #444;
+        }
+        .lock-btn.active { color: #fff; background: #c0392b; }
+
+        .del-btn {
+            width: 45px; height: 100%; border: none; background: #444;
+            color: #aaa; cursor: pointer; font-size: 1.1rem; border-left: 1px solid #333;
+        }
+        .del-btn:hover { background: #e74c3c; color: white; }
+
+        .btn-main { 
+            width: 100%; padding: 18px; border: none; border-radius: 50px; 
+            background: var(--accent); color: white; font-size: 1.2rem; font-weight: bold; 
+            cursor: pointer; transition: transform 0.1s, background 0.2s;
+            box-shadow: 0 4px 0 #bc661b; margin-top: 10px;
+        }
+        .btn-main:active { transform: translateY(2px); box-shadow: 0 2px 0 #bc661b; }
+        .btn-main:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
+        .btn-main.tokkan-btn { background: var(--tokkan); box-shadow: 0 4px 0 #7d4591; }
+
+        .btn-reset {
+            width: 100%; margin-top: 15px; padding: 10px; border: 1px solid #ccc;
+            background: white; color: #666; border-radius: 10px; cursor: pointer;
+            font-size: 0.85rem; font-weight: bold; transition: 0.2s;
+        }
+        .btn-reset:hover { background: #f0f0f0; }
+
+        .config-view { display: none; }
+        .config-item { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee; position: relative; }
+        .config-item label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
+        .config-item input, .config-item textarea { width: calc(100% - 40px); padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .del-row-btn { position: absolute; right: 0; top: 25px; background: #e74c3c; color: white; border: none; border-radius: 5px; padding: 8px; cursor: pointer; }
+
+        .result-area { margin-top: 20px; display: none; background: #333; color: white; padding: 15px; border-radius: 10px; text-align: center; }
+        .result-text { font-weight: bold; white-space: pre-wrap; margin-bottom: 10px; font-size: 1rem; color: #fff; }
+        .btn-copy { width: 100%; padding: 10px; border: none; border-radius: 5px; background: var(--primary); color: white; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="tabs">
+        <button id="tab-slot" class="tab-btn active" onclick="switchTab('slot')">ルール抽選</button>
+        <button id="tab-tokkan" class="tab-btn" onclick="switchTab('tokkan')">突貫バース</button>
+        <button id="tab-config" class="tab-btn" onclick="switchTab('config')">項目設定</button>
+    </div>
+
+    <div class="main-card">
+        <div id="slot-container">
+            <h2>🎲 ルール抽選</h2>
+            <div class="how-to-use">
+                👆 <b>パネルを直接クリック</b>：手動で切り替え。<br>
+                🔒 <b>鍵ボタン</b>：抽選から除外されるよう固定。<br>
+                ❌ <b>削除ボタン</b>：項目をリストから削除。
+            </div>
+            <div id="app" class="slot-container"></div>
+            <button id="main-btn" class="btn-main" onclick="startSpin()">抽選開始！</button>
+            <button class="btn-reset" onclick="resetToDefault()">🔄 値を初期値に戻す</button>
+            
+            <div id="result-wrapper-slot" class="result-area">
+                <div id="result-text-area" class="result-text"></div>
+                <button class="btn-copy" onclick="copyToClipboard('result-text-area', this)">📋 結果をコピー</button>
+            </div>
+        </div>
+
+        <div id="tokkan-container" style="display: none;">
+            <h2 style="color: var(--tokkan);">🃏 突貫バース抽選</h2>
+            <div class="how-to-use" style="border-left-color: var(--tokkan);">
+                🃏 <b>突貫バース</b>：選ばれたパックのみで戦う特殊ルール。<br>
+                ⚠️ 各パックは<b>重複せず独立して</b>選ばれます。
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; justify-content: center;">
+                <label>パック数:</label>
+                <input type="number" id="tokkan-pack-num" value="4" min="1" oninput="renderTokkanInitial()" style="width: 50px; padding: 5px; text-align: center;">
+            </div>
+            <div id="tokkan-app" class="slot-container"></div>
+            <button id="tokkan-main-btn" class="btn-main tokkan-btn" onclick="startTokkanSpin()">パックを抽選！</button>
+            <div id="result-wrapper-tokkan" class="result-area">
+                <div id="tokkan-result-text" class="result-text"></div>
+                <button class="btn-copy" onclick="copyToClipboard('tokkan-result-text', this)">📋 パックリストをコピー</button>
+            </div>
+        </div>
+
+        <div id="config-container" class="config-view">
+            <h2>⚙️ 項目設定</h2>
+            <div id="config-editor"></div>
+            <div style="background: #f0f0f0; padding: 15px; border-radius: 10px; margin-top: 10px;">
+                <label>＋ 新規項目追加</label>
+                <input type="text" id="new-row-name" placeholder="項目名" style="width: 70%; margin-bottom: 5px;">
+                <button class="tab-btn active" onclick="addNewRow()">追加</button>
+            </div>
+            <h3 style="font-size: 1rem; margin-top: 20px;">🃏 突貫用パックリスト</h3>
+            <textarea id="tokkan-list-editor" style="width: 100%; height: 80px; box-sizing: border-box;"></textarea>
+            <button class="btn-main" onclick="saveConfig()" style="background: var(--primary); box-shadow: 0 4px 0 #1a252f;">設定を保存して戻る</button>
+        </div>
+    </div>
+
+<script>
+const generateStepValues = () => {
+    let vals = ["1"];
+    for (let i = 5; i <= 30; i += 5) vals.push(i.toString());
+    vals.push("50");
+    vals.push("99");
+    return vals;
+};
+
+const generatePPValues = () => {
+    let vals = [];
+    for (let i = 1; i <= 10; i++) vals.push(i.toString());
+    for (let i = 20; i <= 50; i += 10) vals.push(i.toString());
+    vals.push("99");
+    return vals;
+};
+
+const ppItems = generatePPValues();
+const range1to10 = Array.from({length: 10}, (_, i) => (i + 1).toString());
+const range0to4 = Array.from({length: 5}, (_, i) => i.toString());
+
+let CONFIG = [
+    { id: "match", name: "対戦形式", items: ["BO1", "2デッキBO1", "BO3", "BO5"] },
+    { id: "hp", name: "初期体力", items: generateStepValues() },
+    { id: "max_pp", name: "PP最大値", items: ppItems },
+    { id: "initial_pp", name: "初期PP", items: ppItems },
+    { id: "pp_gain", name: "毎ターン増加PP", items: range1to10 },
+    { id: "ep", name: "EP数", items: range0to4 },
+    { id: "sep", name: "SEP数", items: range0to4 },
+    { id: "draw_count", name: "開始時ドロー数", items: ["1", "2", "3", "4", "5"] },
+    { id: "evolve_turn", name: "進化可能ターン", items: range1to10 },
+    { id: "super_evolve_turn", name: "超進化可能ターン", items: range1to10 },
+    { id: "rarity", name: "禁止レア", items: ["なし", "ブロンズ", "シルバー", "ゴールド", "レジェンド"] },
+    { id: "leader", name: "禁止クラス", items: ["なし", "エルフ", "ロイヤル", "ウィッチ", "ドラゴン", "ナイトメア", "ビショップ", "ネメシス"] },
+];
+
+function getInitialStates() {
+    return CONFIG.map((conf) => {
+        let initialIndex = 0;
+        if (conf.id === "hp") initialIndex = conf.items.indexOf("20");
+        else if (conf.id === "max_pp") initialIndex = conf.items.indexOf("10");
+        else if (conf.id === "initial_pp" || conf.id === "pp_gain" || conf.id === "draw_count") initialIndex = conf.items.indexOf("1");
+        else if (conf.id === "ep") initialIndex = conf.items.indexOf("2");
+        else if (conf.id === "sep") initialIndex = conf.items.indexOf("2");
+        else if (conf.id === "evolve_turn") initialIndex = conf.items.indexOf("4");
+        else if (conf.id === "super_evolve_turn") initialIndex = conf.items.indexOf("6");
+        
+        return { currentIndex: initialIndex !== -1 ? initialIndex : 0, locked: false };
+    });
+}
+
+let states = getInitialStates();
+let TOKKAN_PACKS = ["伝説の幕開け", "インフィニティ・エボルヴ", "絶傑の継承者", "蒼空の六竜", "花酔遊戯", "アポカリプス・パクト"];
+let isSpinning = false;
+let selectedPacks = [];
+
+function switchTab(mode) {
+    document.getElementById('slot-container').style.display = (mode === 'slot') ? 'block' : 'none';
+    document.getElementById('tokkan-container').style.display = (mode === 'tokkan') ? 'block' : 'none';
+    document.getElementById('config-container').style.display = (mode === 'config') ? 'block' : 'none';
+    document.getElementById('tab-slot').classList.toggle('active', mode === 'slot');
+    document.getElementById('tab-tokkan').classList.toggle('active', mode === 'tokkan');
+    document.getElementById('tab-tokkan').classList.toggle('tokkan-theme', mode === 'tokkan');
+    document.getElementById('tab-config').classList.toggle('active', mode === 'config');
+    if (mode === 'config') renderConfigEditor();
+    if (mode === 'slot') render();
+    if (mode === 'tokkan') renderTokkanInitial();
+}
+
+function render(isFinished = false) {
+    const app = document.getElementById('app');
+    app.innerHTML = '';
+    CONFIG.forEach((config, idx) => {
+        const row = document.createElement('div');
+        row.className = `slot-row ${(isFinished || states[idx].locked) && isFinished ? 'done' : ''}`;
+        row.id = `row-${idx}`;
+        row.innerHTML = `
+            <div class="slot-label">${config.name}</div>
+            <div class="slot-viewport" onclick="manualSelect(${idx})">
+                <div class="slot-item" id="list-${idx}" style="color: ${(isFinished || states[idx].locked) && isFinished ? 'var(--success)' : '#fff'}">
+                    ${config.items[states[idx].currentIndex]}
+                </div>
+            </div>
+            <button class="lock-btn ${states[idx].locked ? 'active' : ''}" onclick="toggleLock(${idx})">
+                ${states[idx].locked ? '🔒' : '🔓'}
+            </button>
+            <button class="del-btn" onclick="deleteRowFromSlot(${idx})">✖</button>
+        `;
+        app.appendChild(row);
+    });
+}
+
+function resetToDefault() {
+    if (isSpinning) return;
+    states = getInitialStates();
+    document.getElementById('result-wrapper-slot').style.display = 'none';
+    render();
+}
+
+function renderTokkanInitial() {
+    const app = document.getElementById('tokkan-app');
+    let count = parseInt(document.getElementById('tokkan-pack-num').value) || 4;
+    count = Math.min(count, TOKKAN_PACKS.length);
+    app.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+        app.innerHTML += `
+            <div class="slot-row" id="tokkan-row-${i}" style="grid-template-columns: 100px 1fr;">
+                <div class="slot-label">パック ${i+1}</div>
+                <div class="slot-viewport">
+                    <div class="slot-item" id="tokkan-list-${i}">待機中...</div>
+                </div>
+            </div>`;
+    }
+}
+
+async function animateSlot(idx, items, isTokkan = false) {
+    return new Promise(resolve => {
+        const listEl = document.getElementById(isTokkan ? `tokkan-list-${idx}` : `list-${idx}`);
+        const rowEl = document.getElementById(isTokkan ? `tokkan-row-${idx}` : `row-${idx}`);
+        let count = 0;
+        const duration = 15 + (idx * 2); 
+        const interval = setInterval(() => {
+            listEl.innerText = items[Math.floor(Math.random() * items.length)];
+            count++;
+            if (count > duration) {
+                clearInterval(interval);
+                listEl.innerText = isTokkan ? selectedPacks[idx] : items[states[idx].currentIndex];
+                listEl.style.color = "var(--success)";
+                rowEl.classList.remove('active');
+                rowEl.classList.add('done');
+                resolve();
+            }
+        }, 60);
+    });
+}
+
+async function startSpin() {
+    if (isSpinning) return;
+    isSpinning = true;
+    document.getElementById('main-btn').disabled = true;
+    document.getElementById('result-wrapper-slot').style.display = 'none';
+
+    const promises = [];
+    
+    // 依存関係のために現在の各項目の値を取得するヘルパー関数
+    const getVal = (id) => {
+        const idx = CONFIG.findIndex(c => c.id === id);
+        if (idx === -1) return null; // 項目が存在しない場合はnullを返す
+        return parseInt(CONFIG[idx].items[states[idx].currentIndex]);
+    };
+
+    CONFIG.forEach((conf, idx) => {
+        if (states[idx].locked) {
+            document.getElementById(`row-${idx}`).classList.add('done');
+            document.getElementById(`list-${idx}`).style.color = "var(--success)";
+            return;
+        }
+        const rowEl = document.getElementById(`row-${idx}`);
+        const listEl = document.getElementById(`list-${idx}`);
+        rowEl.classList.add('active');
+        rowEl.classList.remove('done');
+        listEl.style.color = "#fff";
+        
+        // 依存関係の計算：対象項目が存在する場合のみ絞り込みを行う
+        if (conf.id === "initial_pp") {
+            const maxVal = getVal("max_pp");
+            if (maxVal !== null) {
+            const validIndices = conf.items
+                .map((v, i) => ({v: parseInt(v), i}))
+                .filter(x => x.v <= maxVal)
+                .map(x => x.i);
+            states[idx].currentIndex = validIndices[Math.floor(Math.random() * validIndices.length)];
+            } else {
+                states[idx].currentIndex = Math.floor(Math.random() * conf.items.length);
+            }
+            } else if (conf.id === "pp_gain") {
+            const maxVal = getVal("max_pp");
+            const initVal = getVal("initial_pp");
+            
+            if (maxVal !== null && initVal !== null) {
+                const limit = Math.max(0, maxVal - initVal);
+                const validIndices = conf.items
+                    .map((v, i) => ({v: parseInt(v), i}))
+                    .filter(x => x.v <= limit)
+                    .map(x => x.i);
+                states[idx].currentIndex = validIndices.length > 0 ? validIndices[Math.floor(Math.random() * validIndices.length)] : 0;
+            } else {
+                states[idx].currentIndex = Math.floor(Math.random() * conf.items.length);
+            }
+        } else {
+            states[idx].currentIndex = Math.floor(Math.random() * conf.items.length);
+        }
+    });
+
+    for (let i = 0; i < CONFIG.length; i++) {
+        if (states[i].locked) continue;
+        promises.push(animateSlot(i, CONFIG[i].items));
+        await new Promise(r => setTimeout(r, 100)); 
+    }
+
+    await Promise.all(promises);
+    showSlotResult();
+    isSpinning = false;
+    document.getElementById('main-btn').disabled = false;
+}
+
+async function startTokkanSpin() {
+    if (isSpinning) return;
+    let count = parseInt(document.getElementById('tokkan-pack-num').value);
+    if (isNaN(count) || count < 1) return;
+    count = Math.min(count, TOKKAN_PACKS.length);
+
+    renderTokkanInitial(); 
+    document.getElementById('result-wrapper-tokkan').style.display = 'none';
+    document.getElementById('tokkan-main-btn').disabled = true;
+
+    selectedPacks = [...TOKKAN_PACKS].sort(() => Math.random() - 0.5).slice(0, count);
+
+    isSpinning = true;
+    const promises = [];
+    for (let i = 0; i < count; i++) {
+        document.getElementById(`tokkan-row-${i}`).classList.add('active');
+        promises.push(animateSlot(i, TOKKAN_PACKS, true));
+        await new Promise(r => setTimeout(r, 150));
+    }
+
+    await Promise.all(promises);
+    document.getElementById('tokkan-result-text').innerText = "【突貫バース：採用パック】\n" + selectedPacks.join(' / ');
+    document.getElementById('result-wrapper-tokkan').style.display = 'block';
+    isSpinning = false;
+    document.getElementById('tokkan-main-btn').disabled = false;
+}
+
+function manualSelect(idx) { if (isSpinning) return; states[idx].currentIndex = (states[idx].currentIndex + 1) % CONFIG[idx].items.length; render(); }
+function toggleLock(idx) { if (isSpinning) return; states[idx].locked = !states[idx].locked; render(); }
+function deleteRowFromSlot(idx) { CONFIG.splice(idx, 1); states.splice(idx, 1); render(); }
+
+function showSlotResult() {
+    const resArea = document.getElementById('result-text-area');
+    let results = [];
+    states.forEach((state, idx) => {
+        const val = CONFIG[idx].items[state.currentIndex];
+        if (val === "なし") return;
+        results.push(CONFIG[idx].name + ":" + val);
+    });
+    resArea.innerText = "【ルール抽選結果】\n" + results.join(' / ');
+    document.getElementById('result-wrapper-slot').style.display = 'block';
+}
+
+function copyToClipboard(elementId, btn) {
+    const text = document.getElementById(elementId).innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = "✅ コピー完了！";
+        setTimeout(() => btn.innerText = originalText, 2000);
+    });
+}
+
+function renderConfigEditor() {
+    const editor = document.getElementById('config-editor');
+    editor.innerHTML = CONFIG.map((conf, idx) => `
+        <div class="config-item">
+            <label>${conf.name}</label>
+            <input type="text" id="input-${idx}" value="${conf.items.join('、')}">
+            <button class="del-row-btn" onclick="deleteRow(${idx})">✖</button>
+        </div>`).join('');
+    document.getElementById('tokkan-list-editor').value = TOKKAN_PACKS.join('、');
+}
+
+function saveConfig() {
+    CONFIG.forEach((conf, idx) => {
+        const el = document.getElementById(`input-${idx}`);
+        if(el) {
+            const val = el.value;
+            conf.items = val.split(/[、,]/).map(s => s.trim()).filter(s => s !== "");
+        }
+    });
+    TOKKAN_PACKS = document.getElementById('tokkan-list-editor').value.split(/[、,]/).map(s => s.trim()).filter(s => s !== "");
+    switchTab('slot');
+}
+
+function addNewRow() {
+    const name = document.getElementById('new-row-name').value.trim();
+    if (!name) return;
+    CONFIG.push({ id: "custom-"+Date.now(), name: name, items: ["なし", "あり"] });
+    states.push({ currentIndex: 0, locked: false });
+    document.getElementById('new-row-name').value = "";
+    renderConfigEditor();
+}
+
+function deleteRow(idx) { CONFIG.splice(idx, 1); states.splice(idx, 1); renderConfigEditor(); }
+
+render();
+renderTokkanInitial();
+</script>
+</body>
+</html>
